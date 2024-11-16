@@ -28,7 +28,7 @@ namespace MainGymTrack.Controllers
 
         }
 
-        [HttpGet]
+        [HttpGet("{id}")]
         public async Task<ActionResult<Model1>> GetModel(int id)
         {
             if (_dbContext.model1 == null)
