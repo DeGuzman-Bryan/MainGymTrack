@@ -1,111 +1,63 @@
-﻿using MainGymTrack.Model;
-using Microsoft.AspNetCore.Http;
+﻿
+using MainGymTrack.Model;
+using MainGymTrack.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 
-namespace MainGymTrack.Controllers
+namespace Esports.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ValueAsController : ControllerBase
+    public class HomeController : ControllerBase
     {
-        private readonly TraineeContext _dbContext;
+        private readonly TraineeService _traineeService;
 
-        public ValueAsController(TraineeContext _dbContext)
+        public HomeController(TraineeService traineeService)
         {
-            this._dbContext = _dbContext;
+            _traineeService = traineeService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Model1>>> GetModel()
+        public async Task<ActionResult<IEnumerable<Model1>>> GetModels()
         {
-            if (_dbContext.model1 == null)
-            {
-                return NotFound();
-            }
-            return await _dbContext.model1.ToListAsync();
-
+            var models = await _traineeService.GetAllModelsAsync();
+            return Ok(models);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Model1>> GetModel(int id)
         {
-            if (_dbContext.model1 == null)
-            {
-                return NotFound();
-            }
-
-            var model = await _dbContext.model1.FindAsync(id);
+            var model = await _traineeService.GetModelByIdAsync(id);
             if (model == null)
-            {
                 return NotFound();
-            }
-            return model;
+
+            return Ok(model);
         }
+
         [HttpPost]
         public async Task<ActionResult<Model1>> PostModel(Model1 model)
         {
-            _dbContext.model1.Add(model);
-            await _dbContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetModel), new { id = model.Id }, model);
+            var createdModel = await _traineeService.CreateModelAsync(model);
+            return CreatedAtAction(nameof(GetModel), new { id = createdModel.Id }, createdModel);
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<IActionResult> PutModel(int id, Model1 model)
         {
-            if (id != model.Id)
-            {
-                return BadRequest();
-            }
-
-            _dbContext.Entry(model).State = EntityState.Modified;
-
-            try
-            {
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ModelAvailable(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            var updated = await _traineeService.UpdateModelAsync(id, model);
+            if (!updated)
+                return NotFound();
 
             return Ok();
-        }
-
-        private bool ModelAvailable(int id)
-        {
-            return (_dbContext.model1?.Any(x => x.Id == id)).GetValueOrDefault();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteModel(int id)
         {
-            if (_dbContext.model1 == null)
-            {
-                return NotFound(); // Ensure the DbSet is not null
-            }
+            var deleted = await _traineeService.DeleteModelAsync(id);
+            if (!deleted)
+                return NotFound();
 
-            var model = await _dbContext.model1.FindAsync(id); 
-            if (model == null)
-            {
-                return NotFound(); 
-            }
-
-            _dbContext.model1.Remove(model); 
-            await _dbContext.SaveChangesAsync(); 
-            return Ok(); 
+            return Ok();
         }
-
     }
 }
-
-
